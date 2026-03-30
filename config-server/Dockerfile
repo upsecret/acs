@@ -1,9 +1,6 @@
 FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /workspace
-COPY gradle/ gradle/
-COPY gradlew settings.gradle build.gradle ./
-COPY common-lib/ common-lib/
-COPY config-server/ config-server/
+COPY . .
 RUN chmod +x gradlew && ./gradlew :config-server:bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-alpine

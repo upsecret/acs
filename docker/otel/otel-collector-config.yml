@@ -16,10 +16,12 @@ processors:
     spike_limit_mib: 128
 
 exporters:
-  elasticsearch:
-    endpoints: ["http://elasticsearch:9200"]
-    traces_index: otel-traces
-    logs_index: otel-logs
+  # APM Server receives OTLP and creates proper APM indices
+  # → Kibana APM UI (Service Inventory, Traces, Dependencies)
+  otlphttp/apm:
+    endpoint: http://apm-server:8200
+    tls:
+      insecure: true
   debug:
     verbosity: basic
 
@@ -28,12 +30,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [elasticsearch]
+      exporters: [otlphttp/apm]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [elasticsearch]
+      exporters: [otlphttp/apm]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [elasticsearch]
+      exporters: [otlphttp/apm]

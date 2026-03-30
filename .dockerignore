@@ -1,0 +1,12 @@
+**/build/
+.gradle/
+.git/
+.claude/
+.idea/
+*.iml
+**/*.class
+META-INF/
+org/
+.env*
+docker/
+*.md

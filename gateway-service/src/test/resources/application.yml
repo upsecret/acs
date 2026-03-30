@@ -55,12 +55,15 @@ management:
     metrics:
       export:
         enabled: false
+  opentelemetry:
     tracing:
       export:
-        enabled: false
-    logs:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+    logging:
       export:
-        enabled: false
+        otlp:
+          endpoint: http://localhost:4318/v1/logs
 
 bucket4j:
   redis:
