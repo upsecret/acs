@@ -1,0 +1,8 @@
+logging:
+  level:
+    root: ${LOG_LEVEL:DEBUG}
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0

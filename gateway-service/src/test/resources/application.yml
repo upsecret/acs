@@ -1,0 +1,76 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: gateway-service
+  config:
+    import: optional:configserver:http://localhost:0
+  cloud:
+    bus:
+      enabled: false
+    gateway:
+      server:
+        webflux:
+          handler-mapping:
+            order: -1
+          trusted-proxies: ".*"
+          routes:
+            - id: auth-token
+              uri: forward:///internal/auth/token
+              predicates:
+                - Path=/auth/token
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    bucket4j-rate-limiter.capacity: 30
+                    bucket4j-rate-limiter.refillTokens: 30
+                    bucket4j-rate-limiter.refillPeriod: 60s
+                    bucket4j-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: auth-logout
+              uri: forward:///internal/auth/logout
+              predicates:
+                - Path=/auth/logout
+                - Method=POST
+
+            - id: hr-service
+              uri: https://httpbin.org
+              predicates:
+                - Path=/api/hr/**
+              filters:
+                - Auth
+                - name: RequestRateLimiter
+                  args:
+                    bucket4j-rate-limiter.capacity: 5
+                    bucket4j-rate-limiter.refillTokens: 5
+                    bucket4j-rate-limiter.refillPeriod: 60s
+                    bucket4j-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@employeeAppKeyResolver}"
+
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: false
+    tracing:
+      export:
+        enabled: false
+    logs:
+      export:
+        enabled: false
+
+bucket4j:
+  redis:
+    enabled: false
+
+blacklist:
+  cache:
+    max-size: 1000
+    ttl-seconds: 30
+
+jwt:
+  secret: "TestSecretKeyForGatewayServiceIntegrationTestMustBeAtLeast64BytesLongForHS512!!"
+  expiration-seconds: 3600

@@ -1,0 +1,105 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  cloud:
+    bus:
+      enabled: true
+      refresh:
+        enabled: true
+    gateway:
+      server:
+        webflux:
+          handler-mapping:
+            order: -1
+          trusted-proxies: "10\\..*|172\\..*|192\\.168\\..*"
+          routes:
+            - id: auth-token
+              uri: forward:///internal/auth/token
+              predicates:
+                - Path=/auth/token
+                - Method=POST
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    bucket4j-rate-limiter.capacity: 30
+                    bucket4j-rate-limiter.refillTokens: 30
+                    bucket4j-rate-limiter.refillPeriod: 60s
+                    bucket4j-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
+
+            - id: auth-logout
+              uri: forward:///internal/auth/logout
+              predicates:
+                - Path=/auth/logout
+                - Method=POST
+
+            - id: hr-service
+              uri: http://hr-service:8080
+              predicates:
+                - Path=/api/hr/**
+              filters:
+                - Auth
+                - name: RequestRateLimiter
+                  args:
+                    bucket4j-rate-limiter.capacity: 100
+                    bucket4j-rate-limiter.refillTokens: 50
+                    bucket4j-rate-limiter.refillPeriod: 60s
+                    bucket4j-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@employeeAppKeyResolver}"
+
+            - id: attendance-service
+              uri: http://attendance-service:8080
+              predicates:
+                - Path=/api/attendance/**
+              filters:
+                - Auth
+                - name: RequestRateLimiter
+                  args:
+                    bucket4j-rate-limiter.capacity: 100
+                    bucket4j-rate-limiter.refillTokens: 50
+                    bucket4j-rate-limiter.refillPeriod: 60s
+                    bucket4j-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@employeeAppKeyResolver}"
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+
+jwt:
+  expiration-seconds: ${JWT_EXPIRATION:3600}
+
+blacklist:
+  cache:
+    max-size: 10000
+    ttl-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, busrefresh
+  opentelemetry:
+    resource-attributes:
+      service.name: ${spring.application.name}
+      deployment.environment: ${SPRING_PROFILES_ACTIVE:local}
+  tracing:
+    sampling:
+      probability: ${OTEL_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    metrics:
+      export:
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+        step: ${OTEL_METRICS_EXPORT_STEP:30s}
+    tracing:
+      export:
+        endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+    logs:
+      export:
+        endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://localhost:4318/v1/logs}

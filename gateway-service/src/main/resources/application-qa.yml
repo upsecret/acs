@@ -1,0 +1,15 @@
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          trusted-proxies: "${TRUSTED_PROXIES:10\\.0\\.0\\..*|172\\.16\\..*}"
+
+management:
+  tracing:
+    sampling:
+      probability: 0.5

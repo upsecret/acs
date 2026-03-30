@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+
+  config-server:
+    image: acs/config-server:${IMAGE_TAG:-latest}
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: jdbc,${SPRING_PROFILES_ACTIVE:-local}
+      ORACLE_URL: ${ORACLE_URL}
+      ORACLE_USER: ${ORACLE_USER}
+      ORACLE_PASS: ${ORACLE_PASS}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT}
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT}
+      OTEL_SAMPLING_PROBABILITY: ${OTEL_SAMPLING_PROBABILITY:-1.0}
+      OTEL_METRICS_EXPORT_STEP: ${OTEL_METRICS_EXPORT_STEP:-30s}
+    deploy:
+      replicas: ${CONFIG_REPLICAS:-1}
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+      resources:
+        limits:
+          cpus: "${CONFIG_CPU_LIMIT:-0.5}"
+          memory: ${CONFIG_MEM_LIMIT:-384M}
+        reservations:
+          cpus: "${CONFIG_CPU_RESERVE:-0.25}"
+          memory: ${CONFIG_MEM_RESERVE:-192M}
+    healthcheck:
+      test: wget -qO- http://localhost:8888/actuator/health || exit 1
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+    networks:
+      - acs-overlay
+
+  gateway-service:
+    image: acs/gateway-service:${IMAGE_TAG:-latest}
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-31536000}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT}
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT}
+      OTEL_SAMPLING_PROBABILITY: ${OTEL_SAMPLING_PROBABILITY:-1.0}
+      OTEL_METRICS_EXPORT_STEP: ${OTEL_METRICS_EXPORT_STEP:-30s}
+    deploy:
+      replicas: ${GATEWAY_REPLICAS:-1}
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+      resources:
+        limits:
+          cpus: "${GATEWAY_CPU_LIMIT:-0.5}"
+          memory: ${GATEWAY_MEM_LIMIT:-384M}
+        reservations:
+          cpus: "${GATEWAY_CPU_RESERVE:-0.25}"
+          memory: ${GATEWAY_MEM_RESERVE:-192M}
+    healthcheck:
+      test: wget -qO- http://localhost:8080/actuator/health || exit 1
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+    networks:
+      - acs-overlay
+
+networks:
+  acs-overlay:
+    driver: overlay
+    attachable: true

@@ -1,0 +1,8 @@
+logging:
+  level:
+    root: ${LOG_LEVEL:WARN}
+
+management:
+  tracing:
+    sampling:
+      probability: 0.1

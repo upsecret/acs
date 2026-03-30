@@ -1,0 +1,5 @@
+rootProject.name = 'acs'
+
+include 'common-lib'
+include 'config-server'
+include 'gateway-service'
