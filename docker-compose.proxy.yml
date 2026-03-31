@@ -1,0 +1,10 @@
+# Corporate proxy override
+# Usage: docker compose -f docker-compose.full.yml -f docker-compose.proxy.yml up -d
+# Prerequisite: place your corporate proxy CA certificate at docker/proxy/proxy.crt
+services:
+
+  kibana:
+    volumes:
+      - ./docker/proxy/proxy.crt:/usr/share/kibana/config/proxy.crt:ro
+    environment:
+      - NODE_EXTRA_CA_CERTS=/usr/share/kibana/config/proxy.crt

@@ -22,6 +22,19 @@ exporters:
     endpoint: http://apm-server:8200
     tls:
       insecure: true
+  # Elasticsearch direct — for application logs (APM Server only indexes errors)
+  elasticsearch/logs:
+    endpoints: ["http://elasticsearch:9200"]
+    user: elastic
+    password: ${env:ELASTIC_PASSWORD}
+    logs_dynamic_index:
+      enabled: true
+    mapping:
+      mode: ecs
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 1000
   debug:
     verbosity: basic
 
@@ -38,4 +51,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/apm]
+      exporters: [elasticsearch/logs, debug]

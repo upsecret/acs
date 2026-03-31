@@ -31,6 +31,9 @@ Thumbs.db
 !docker/env/.env.*
 *.env.local
 
+# Proxy certificates
+docker/proxy/*.crt
+
 # Extracted class files
 *.class
 META-INF/

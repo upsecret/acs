@@ -1,0 +1,117 @@
+# Docker Swarm stack for dev/staging deployment
+# Usage: docker stack deploy -c swarm-stack.yml acs
+version: "3.8"
+
+services:
+
+  # ── Infrastructure ──
+
+  redis:
+    image: redis:7-alpine
+    deploy:
+      replicas: 1
+    networks:
+      - acs-net
+
+  kafka:
+    image: bitnami/kafka:3.9
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    deploy:
+      replicas: 1
+    networks:
+      - acs-net
+
+  # ── Observability (local/dev only) ──
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    deploy:
+      replicas: 1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - acs-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    deploy:
+      replicas: 1
+    networks:
+      - acs-net
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    configs:
+      - source: otel-config
+        target: /etc/otelcol-contrib/config.yaml
+    deploy:
+      replicas: 1
+    networks:
+      - acs-net
+
+  # ── Applications ──
+
+  config-server:
+    image: ${REGISTRY:-localhost:5000}/acs-config-server:${TAG:-latest}
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-h2,jdbc,local}
+      KAFKA_BROKERS: kafka:9092
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}
+      OTEL_SAMPLING_PROBABILITY: ${OTEL_SAMPLING_PROBABILITY:-1.0}
+      OTEL_METRICS_EXPORT_STEP: ${OTEL_METRICS_EXPORT_STEP:-30s}
+    deploy:
+      replicas: 1
+    networks:
+      - acs-net
+
+  gateway-service:
+    image: ${REGISTRY:-localhost:5000}/acs-gateway-service:${TAG:-latest}
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      CONFIG_SERVER_URL: http://config-server:8888
+      REDIS_HOST: redis
+      KAFKA_BROKERS: kafka:9092
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://otel-collector:4318/v1/traces}
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-http://otel-collector:4318/v1/metrics}
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:-http://otel-collector:4318/v1/logs}
+      OTEL_SAMPLING_PROBABILITY: ${OTEL_SAMPLING_PROBABILITY:-1.0}
+      OTEL_METRICS_EXPORT_STEP: ${OTEL_METRICS_EXPORT_STEP:-30s}
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+    networks:
+      - acs-net
+
+configs:
+  otel-config:
+    file: ./docker/otel/otel-collector-config.yml
+
+volumes:
+  es-data:
+
+networks:
+  acs-net:
+    driver: overlay

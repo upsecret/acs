@@ -2,6 +2,14 @@ logging:
   level:
     root: DEBUG
     org.springframework.cloud.gateway: TRACE
+    gateway.http: DEBUG
+
+gateway:
+  logging:
+    enabled: true
+    log-headers: true
+    log-body: true
+    max-body-size: 2048
 
 spring:
   cloud:
