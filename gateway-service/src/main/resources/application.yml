@@ -86,7 +86,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, busrefresh
+        include: health, busrefresh, env, configprops, gateway
+  endpoint:
+    env:
+      show-values: ALWAYS
+    configprops:
+      show-values: ALWAYS
+    gateway:
+      enabled: true
   logging:
     export:
       otlp:

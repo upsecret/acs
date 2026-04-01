@@ -81,6 +81,15 @@ public class PropertyRepository {
                 .update() > 0;
     }
 
+    public int deleteByKeyPrefix(String application, String profile, String label, String keyPrefix) {
+        return jdbc.sql("DELETE FROM PROPERTIES WHERE APPLICATION = ? AND PROFILE = ? AND LABEL = ? AND PROP_KEY LIKE ?")
+                .param(application)
+                .param(profile)
+                .param(label)
+                .param(keyPrefix + "%")
+                .update();
+    }
+
     public List<String> findDistinctApplications() {
         return jdbc.sql("SELECT DISTINCT APPLICATION FROM PROPERTIES ORDER BY APPLICATION")
                 .query((rs, rowNum) -> rs.getString("APPLICATION"))

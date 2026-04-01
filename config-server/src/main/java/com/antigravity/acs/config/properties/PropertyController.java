@@ -58,6 +58,22 @@ public class PropertyController {
         return ResponseEntity.notFound().build();
     }
 
+    @PostMapping("/batch")
+    public ResponseEntity<List<PropertyEntity>> batchCreate(@RequestBody List<PropertyCreateRequest> requests) {
+        List<PropertyEntity> created = requests.stream().map(repository::create).toList();
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @DeleteMapping("/batch")
+    public ResponseEntity<Void> batchDelete(
+            @RequestParam String application,
+            @RequestParam String profile,
+            @RequestParam String label,
+            @RequestParam String keyPrefix) {
+        repository.deleteByKeyPrefix(application, profile, label, keyPrefix);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/refresh")
     public ResponseEntity<Map<String, String>> refresh() {
         try {

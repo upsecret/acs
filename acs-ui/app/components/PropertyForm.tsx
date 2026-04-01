@@ -1,47 +1,50 @@
-import { useState } from 'react'
-import { createProperty } from '../api/properties'
+import { useState } from "react";
+import { createProperty } from "../api/properties";
 
-export default function PropertyForm({ open, onClose, onCreated }) {
+interface PropertyFormProps {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}
+
+export default function PropertyForm({ open, onClose, onCreated }: PropertyFormProps) {
   const [form, setForm] = useState({
-    application: '',
-    profile: 'default',
-    label: 'main',
-    propKey: '',
-    propValue: '',
-  })
-  const [saving, setSaving] = useState(false)
+    application: "",
+    profile: "default",
+    label: "main",
+    propKey: "",
+    propValue: "",
+  });
+  const [saving, setSaving] = useState(false);
 
-  if (!open) return null
+  if (!open) return null;
 
-  const handleChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }))
-  }
+  const handleChange = (key: string, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!form.application || !form.propKey) {
-      alert('Application and Key are required.')
-      return
+      alert("Application and Key are required.");
+      return;
     }
-    setSaving(true)
+    setSaving(true);
     try {
-      await createProperty(form)
-      setForm({ application: '', profile: 'default', label: 'main', propKey: '', propValue: '' })
-      onCreated()
-      onClose()
+      await createProperty(form);
+      setForm({ application: "", profile: "default", label: "main", propKey: "", propValue: "" });
+      onCreated();
+      onClose();
     } catch (err) {
-      alert('Failed to create: ' + err.message)
+      alert("Failed to create: " + (err as Error).message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-md p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold mb-4">Add Property</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
@@ -49,7 +52,7 @@ export default function PropertyForm({ open, onClose, onCreated }) {
             <input
               type="text"
               value={form.application}
-              onChange={(e) => handleChange('application', e.target.value)}
+              onChange={(e) => handleChange("application", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="e.g. gateway-service"
             />
@@ -60,7 +63,7 @@ export default function PropertyForm({ open, onClose, onCreated }) {
               <input
                 type="text"
                 value={form.profile}
-                onChange={(e) => handleChange('profile', e.target.value)}
+                onChange={(e) => handleChange("profile", e.target.value)}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
@@ -69,7 +72,7 @@ export default function PropertyForm({ open, onClose, onCreated }) {
               <input
                 type="text"
                 value={form.label}
-                onChange={(e) => handleChange('label', e.target.value)}
+                onChange={(e) => handleChange("label", e.target.value)}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
@@ -79,7 +82,7 @@ export default function PropertyForm({ open, onClose, onCreated }) {
             <input
               type="text"
               value={form.propKey}
-              onChange={(e) => handleChange('propKey', e.target.value)}
+              onChange={(e) => handleChange("propKey", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="e.g. jwt.secret"
             />
@@ -88,7 +91,7 @@ export default function PropertyForm({ open, onClose, onCreated }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Value</label>
             <textarea
               value={form.propValue}
-              onChange={(e) => handleChange('propValue', e.target.value)}
+              onChange={(e) => handleChange("propValue", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400"
               rows={3}
             />
@@ -106,11 +109,11 @@ export default function PropertyForm({ open, onClose, onCreated }) {
               disabled={saving}
               className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Create'}
+              {saving ? "Saving..." : "Create"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }

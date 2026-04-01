@@ -1,45 +1,50 @@
-import { useState } from 'react'
-import { updateProperty } from '../api/properties'
+import { useState } from "react";
+import { updateProperty } from "../api/properties";
+import type { Property } from "../types/property";
 
-export default function PropertyTable({ properties, onDelete, onUpdated }) {
-  const [editingId, setEditingId] = useState(null)
-  const [editValue, setEditValue] = useState('')
-  const [saving, setSaving] = useState(false)
+interface PropertyTableProps {
+  properties: Property[];
+  onDelete: (property: Property) => void;
+  onUpdated: () => void;
+}
 
-  const startEdit = (prop) => {
-    setEditingId(prop.id)
-    setEditValue(prop.propValue || '')
-  }
+export default function PropertyTable({ properties, onDelete, onUpdated }: PropertyTableProps) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = (prop: Property) => {
+    setEditingId(prop.id);
+    setEditValue(prop.propValue || "");
+  };
 
   const cancelEdit = () => {
-    setEditingId(null)
-    setEditValue('')
-  }
+    setEditingId(null);
+    setEditValue("");
+  };
 
-  const saveEdit = async (id) => {
-    setSaving(true)
+  const saveEdit = async (id: number) => {
+    setSaving(true);
     try {
-      await updateProperty(id, editValue)
-      setEditingId(null)
-      onUpdated()
+      await updateProperty(id, editValue);
+      setEditingId(null);
+      onUpdated();
     } catch (err) {
-      alert('Failed to update: ' + err.message)
+      alert("Failed to update: " + (err as Error).message);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
-  const handleKeyDown = (e, id) => {
-    if (e.key === 'Enter') saveEdit(id)
-    if (e.key === 'Escape') cancelEdit()
-  }
+  const handleKeyDown = (e: React.KeyboardEvent, id: number) => {
+    if (e.key === "Enter") saveEdit(id);
+    if (e.key === "Escape") cancelEdit();
+  };
 
   if (properties.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        No properties found.
-      </div>
-    )
+      <div className="text-center py-12 text-gray-500">No properties found.</div>
+    );
   }
 
   return (
@@ -108,7 +113,7 @@ export default function PropertyTable({ properties, onDelete, onUpdated }) {
                 )}
               </td>
               <td className="py-2.5 px-4 text-gray-500 text-xs whitespace-nowrap">
-                {prop.updatedAt ? new Date(prop.updatedAt).toLocaleString() : '-'}
+                {prop.updatedAt ? new Date(prop.updatedAt).toLocaleString() : "-"}
               </td>
               <td className="py-2.5 px-4">
                 <button
@@ -123,5 +128,5 @@ export default function PropertyTable({ properties, onDelete, onUpdated }) {
         </tbody>
       </table>
     </div>
-  )
+  );
 }
